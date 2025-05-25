@@ -1,0 +1,4 @@
+﻿dotnet tool install --global dotnet-ef
+download dotnet-----
+dotnet ef migrations add SeedInitialData
+dotnet ef database update
