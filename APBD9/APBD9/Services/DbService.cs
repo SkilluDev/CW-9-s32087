@@ -89,8 +89,9 @@ public class DbService(AppDbContext data) : IDbService
             FirstName = patient.FirstName,
             LastName = patient.LastName,
             Birthdate = patient.Birthdate,
-            Prescriptions = data.Prescriptions.Where(p => p.IdPatient == id).Select(p=>new PrescriptionGetDto()
-            {
+            Prescriptions = data.Prescriptions.
+                Where(p => p.IdPatient == id).Select(p=>new PrescriptionGetDto()
+                {
                 IdPrescription = p.IdPrescription,
                 Date = p.Date,
                 DueDate = p.Date,
@@ -104,7 +105,7 @@ public class DbService(AppDbContext data) : IDbService
                     
                 }).ToList(),
                 
-            }).ToList()
+            }).OrderBy(p=>p.DueDate).ToList()
         };
 
     }
