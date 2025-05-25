@@ -1,4 +1,8 @@
-﻿using APBD9.DTOs;
+﻿using APBD9.Data;
+using APBD9.DTOs;
+using APBD9.Exceptions;
+using APBD9.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace APBD9.Services;
 
@@ -7,89 +11,78 @@ public interface IDbService
     Task<PrescriptionGetDto> CreatePrescriptionAsync(PrescriptionPostDto prescriptionData);
 }
 
-public class DbService : IDbService
+public class DbService(AppDbContext data) : IDbService
 {
     public async Task<PrescriptionGetDto> CreatePrescriptionAsync(PrescriptionPostDto prescriptionData)
     {
-        List<Group> groups = [];
-
-        // At first, we have to check if the given groups exist in the DB
-        if (studentData.Groups is not null && studentData.Groups.Count != 0)
+        var patient = await data.Patients.FirstOrDefaultAsync(g => g.IdPatient == prescriptionData.Patient.IdPatient);
+        if (patient is null)
         {
-            foreach (var groupId in studentData.Groups)
+            data.Patients.Add(new Patient
             {
-                var group = await data.Groups.FirstOrDefaultAsync(g => g.Id == groupId);
-                if (group is null)
-                {
-                    throw new NotFoundException($"Group with id: {groupId} not found");
-                }
-
-                groups.Add(group);
-            }
+                FirstName = prescriptionData.Patient.FirstName,
+                LastName = prescriptionData.Patient.LastName,
+                Birthdate = prescriptionData.Patient.Birthdate,
+            });
+        }
+        
+        var doctor = await data.Doctors.FirstOrDefaultAsync(g => g.IdDoctor == prescriptionData.Doctor.IdDoctor);
+        if (doctor is null)
+        {
+            data.Doctors.Add(new Doctor()
+            {
+                FirstName = prescriptionData.Doctor.FirstName,
+                LastName = prescriptionData.Doctor.LastName,
+                Email = prescriptionData.Doctor.Email,
+            });
         }
 
-        // *Approach 1* - add data to each table manually using multiple requests (transaction required)
-        // var transaction = await data.Database.BeginTransactionAsync(); // Begin transaction
-        // try
-        // {
-        //     var student = new Student
-        //     {
-        //         FirstName = studentData.FirstName,
-        //         LastName = studentData.LastName,
-        //         Age = studentData.Age,
-        //         EntranceExamScore = studentData.EntranceExamScore
-        //     };
-        //     await data.Students.AddAsync(student);
-        //     await data.SaveChangesAsync(); // Request 1
-        //
-        //     var groupAssignments = (studentData.Groups ?? []).Select(groupId => new GroupAssignment
-        //     {
-        //         GroupId = groupId,
-        //         StudentId = student.Id,
-        //     });
-        //     await data.GroupAssignments.AddRangeAsync(groupAssignments);
-        //     await data.SaveChangesAsync(); // Request 2
-        //     
-        //     await transaction.CommitAsync(); // Commit transaction
-        // }
-        // catch (Exception)
-        // {
-        //     await transaction.RollbackAsync(); // Rollback transaction if error occurs
-        //     throw;
-        // }
-
-        // *Approach 2* - add all data via single context access
-        // Map a DTO data to the student model.
-        var student = new Student
+        if (prescriptionData.DueDate < prescriptionData.Date)
         {
-            FirstName = studentData.FirstName,
-            LastName = studentData.LastName,
-            Age = studentData.Age,
-            EntranceExamScore = studentData.EntranceExamScore,
-            GroupAssignments = (studentData.Groups ?? []).Select(groupId => new GroupAssignment
-            {
-                GroupId = groupId,
-            }).ToList()
+            throw new ArgumentException("Due date cannot be greater than prescription date");
+        }
+
+        var prescription = new Prescription
+        {
+            Date = prescriptionData.Date,
+            DueDate = prescriptionData.DueDate,
+            IdPatient = prescriptionData.Patient.IdPatient,
+            IdDoctor = prescriptionData.Doctor.IdDoctor,
+            PrescriptionMedicaments = prescriptionData.Medicaments.Select(medicament => new PrescriptionMedicament()
+                {
+                    IdMedicament = medicament.IdMedicament,
+                    Dose = medicament.Dose,
+                    Details = medicament.Description
+                }
+            ).ToList()
         };
 
         // Add new student to the db context, and save all changes.
-        await data.Students.AddAsync(student);
+        await data.Prescriptions.AddAsync(prescription);
         await data.SaveChangesAsync();
 
 
         // Return created records to the controller.
-        return new StudentGetDto
+        return new PrescriptionGetDto
         {
-            Id = student.Id,
-            FirstName = studentData.FirstName,
-            LastName = studentData.LastName,
-            Age = studentData.Age,
-            EntranceExamScore = studentData.EntranceExamScore,
-            Groups = groups.Select(group => new StudentGetDtoGroup
+            IdPrescription = prescription.IdPrescription,
+            Patient = new PatientGetDto()
             {
-                Id = group.Id,
-                Name = group.Name,
-            }).ToList()
+                FirstName = prescriptionData.Patient.FirstName,
+                LastName = prescriptionData.Patient.LastName,
+                Birthdate = prescriptionData.Patient.Birthdate,
+                IdPatient = prescriptionData.Patient.IdPatient,
+            },
+            Doctor = new DoctorGetDto()
+            {
+                IdDoctor = prescriptionData.Doctor.IdDoctor,
+                FirstName = prescriptionData.Doctor.FirstName,
+                LastName = prescriptionData.Doctor.LastName,
+                Email = prescriptionData.Doctor.Email,
+            },
+            Date = prescriptionData.Date,
+            DueDate = prescriptionData.DueDate,
+            Prescriptions = prescriptionData.Medicaments
         };
     }
 }

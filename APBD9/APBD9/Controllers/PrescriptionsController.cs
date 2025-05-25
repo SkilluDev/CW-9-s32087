@@ -16,12 +16,18 @@ public class PrescriptionsController(IDbService service) : ControllerBase
         try
         {
             var prescription = await service.CreatePrescriptionAsync(prescriptionData);
-            return CreatedAtAction(nameof(AddPrescription), new { id = prescription.Id }, prescription);
+            return CreatedAtAction(nameof(AddPrescription), new { id = prescription.IdPrescription }, prescription);
         }
         catch (NotFoundException e)
         {
             return NotFound(e.Message);
         }
+    }
+    
+    [HttpGet]
+    public IActionResult GetPrescriptions()
+    {
+        return Ok("To jest endpoint GET dla recept.");
     }
 
 }

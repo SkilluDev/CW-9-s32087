@@ -1,9 +1,6 @@
 using APBD9.Data;
 using APBD9.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.EntityFrameworkCore.SqlServer;
-using Microsoft.EntityFrameworkCore.Design;
 
 namespace APBD9;
 
@@ -17,6 +14,9 @@ public class Program
 
         builder.Services.AddControllers();
         
+        builder.Services.AddEndpointsApiExplorer(); // Wymagane dla AddSwaggerGen
+        builder.Services.AddSwaggerGen();
+        
         builder.Services.AddDbContext<AppDbContext>(opt =>
         {
             opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
@@ -24,8 +24,6 @@ public class Program
         
         builder.Services.AddScoped<IDbService, DbService>();
         
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
 
         var app = builder.Build();
 
@@ -37,10 +35,14 @@ public class Program
         }
 
         app.UseAuthorization();
+        
+        
 
 
         app.MapControllers();
-
+        
+        
+        
         app.Run();
     }
 }
