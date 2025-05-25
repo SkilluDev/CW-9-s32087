@@ -1,4 +1,6 @@
-﻿namespace APBD9.DTOs;
+﻿using APBD9.Models;
+
+namespace APBD9.DTOs;
 
 public class PrescriptionMedicamentGetDto
 {
@@ -7,4 +9,6 @@ public class PrescriptionMedicamentGetDto
     public int? Dose { get; set; }
     
     public string? Description { get; set; }
+    
+    public MedicamentGetDto? Medicament { get; set; }
 }

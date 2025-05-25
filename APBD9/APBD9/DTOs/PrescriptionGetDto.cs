@@ -6,7 +6,7 @@ public class PrescriptionGetDto
 {
     public int IdPrescription { get; set; }
     public int IdPatient { get; set; }
-    public int IdDoctor { get; set; }
+    public DoctorGetDto Doctor { get; set; }
     public DateTime? Date { get; set; }
     public DateTime? DueDate { get; set; }
     

@@ -68,7 +68,7 @@ public class DbService(AppDbContext data) : IDbService
         {
             IdPrescription = prescription.IdPrescription,
             IdPatient = prescriptionData.Patient.IdPatient,
-            IdDoctor = prescriptionData.Doctor.IdDoctor,
+            Doctor = prescriptionData.Doctor,
             Date = prescriptionData.Date,
             DueDate = prescriptionData.DueDate,
             Medicaments = prescriptionData.Medicaments
@@ -89,19 +89,32 @@ public class DbService(AppDbContext data) : IDbService
             FirstName = patient.FirstName,
             LastName = patient.LastName,
             Birthdate = patient.Birthdate,
-            Prescriptions = data.Prescriptions.
-                Where(p => p.IdPatient == id).Select(p=>new PrescriptionGetDto()
+            Prescriptions = data.Prescriptions.Join(data.Doctors,p=>p.IdDoctor,d=>d.IdDoctor, (p,d)=>new {p,d}).
+                Where(o => o.p.IdPatient == id).Select(o=>new PrescriptionGetDto()
                 {
-                IdPrescription = p.IdPrescription,
-                Date = p.Date,
-                DueDate = p.Date,
-                IdDoctor = p.IdDoctor,
-                IdPatient = p.IdPatient,
-                Medicaments = p.PrescriptionMedicaments.Select(medicament => new PrescriptionMedicamentGetDto()
+                IdPrescription = o.p.IdPrescription,
+                Date = o.p.Date,
+                DueDate = o.p.Date,
+                Doctor = new DoctorGetDto()
                 {
-                    IdMedicament = medicament.IdMedicament,
-                    Dose = medicament.Dose,
-                    Description = medicament.Details
+                    IdDoctor = o.d.IdDoctor,
+                    FirstName = o.d.FirstName,
+                    LastName = o.d.LastName,
+                    Email = o.d.Email,
+                },
+                IdPatient = o.p.IdPatient,
+                Medicaments = o.p.PrescriptionMedicaments.Join(data.Medicaments,p=>p.IdMedicament,m=>m.IdMedicament,(p,m)=>new {p,m}).Select(o2 => new PrescriptionMedicamentGetDto()
+                {
+                    IdMedicament = o2.p.IdMedicament,
+                    Dose = o2.p.Dose,
+                    Description = o2.p.Details,
+                    
+                    Medicament = new MedicamentGetDto(){
+                        IdMedicament = o2.m.IdMedicament,
+                        Description = o2.m.Description,
+                        Name = o2.m.Name,
+                        Type = o2.m.Type,
+                    }
                     
                 }).ToList(),
                 
