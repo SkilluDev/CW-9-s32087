@@ -11,7 +11,7 @@ public class PatientGetDto
     
     public string LastName { get; set; }
     
-    public DateTime Birthdate { get; set; }
+    public DateTime? Birthdate { get; set; }
 
-    public ICollection<Prescription>? Prescriptions { get; set; }
+    public ICollection<PrescriptionGetDto>? Prescriptions { get; set; }
 }

@@ -9,6 +9,7 @@ namespace APBD9.Services;
 public interface IDbService
 {
     Task<PrescriptionGetDto> CreatePrescriptionAsync(PrescriptionPostDto prescriptionData);
+    Task<PatientGetDto?> GetPatientAsync(int id);
 }
 
 public class DbService(AppDbContext data) : IDbService
@@ -66,23 +67,45 @@ public class DbService(AppDbContext data) : IDbService
         return new PrescriptionGetDto
         {
             IdPrescription = prescription.IdPrescription,
-            Patient = new PatientGetDto()
-            {
-                FirstName = prescriptionData.Patient.FirstName,
-                LastName = prescriptionData.Patient.LastName,
-                Birthdate = prescriptionData.Patient.Birthdate,
-                IdPatient = prescriptionData.Patient.IdPatient,
-            },
-            Doctor = new DoctorGetDto()
-            {
-                IdDoctor = prescriptionData.Doctor.IdDoctor,
-                FirstName = prescriptionData.Doctor.FirstName,
-                LastName = prescriptionData.Doctor.LastName,
-                Email = prescriptionData.Doctor.Email,
-            },
+            IdPatient = prescriptionData.Patient.IdPatient,
+            IdDoctor = prescriptionData.Doctor.IdDoctor,
             Date = prescriptionData.Date,
             DueDate = prescriptionData.DueDate,
-            Prescriptions = prescriptionData.Medicaments
+            Medicaments = prescriptionData.Medicaments
         };
+    }
+
+    public async Task<PatientGetDto?> GetPatientAsync(int id)
+    {
+        var patient = await data.Patients.FirstOrDefaultAsync(g => g.IdPatient == id);
+        if (patient is null)
+        {
+            throw new NotFoundException($"Patient with id '{ id }' not found");
+        }
+
+        return new PatientGetDto()
+        {
+            IdPatient = patient.IdPatient,
+            FirstName = patient.FirstName,
+            LastName = patient.LastName,
+            Birthdate = patient.Birthdate,
+            Prescriptions = data.Prescriptions.Where(p => p.IdPatient == id).Select(p=>new PrescriptionGetDto()
+            {
+                IdPrescription = p.IdPrescription,
+                Date = p.Date,
+                DueDate = p.Date,
+                IdDoctor = p.IdDoctor,
+                IdPatient = p.IdPatient,
+                Medicaments = p.PrescriptionMedicaments.Select(medicament => new PrescriptionMedicamentGetDto()
+                {
+                    IdMedicament = medicament.IdMedicament,
+                    Dose = medicament.Dose,
+                    Description = medicament.Details
+                    
+                }).ToList(),
+                
+            }).ToList()
+        };
+
     }
 }
